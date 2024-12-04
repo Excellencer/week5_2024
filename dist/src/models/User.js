@@ -32,7 +32,7 @@ let userSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     todos: [todoSchema],
 });
-const User = mongoose_1.default.model("User", userSchema);
+const User = mongoose_1.default.model('User', userSchema);
 exports.User = User;
 const Todo = mongoose_1.default.model('Todo', todoSchema);
 exports.Todo = Todo;

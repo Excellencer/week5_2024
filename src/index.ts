@@ -1,10 +1,10 @@
 import { Request, Response, Router } from 'express';
 import bodyParser from 'body-parser';
 import path from 'path';
-import { User, ITodoDocument } from '../src/models/User';
+import { User, ITodo } from '../src/models/User';
 
-const router: Router = Router();
-const jsonParser = bodyParser.json();
+let router: Router = Router();
+let jsonParser = bodyParser.json();
 
 router.get('/', (req: Request, res: Response) => {
   res.sendFile(path.join('public', '../index.html'));
@@ -12,7 +12,8 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 router.post('/add', jsonParser, async (req: Request, res: Response): Promise<void> => {
-  const { name, todo } = req.body;
+  console.log(req.body)
+  let { name, todo } = req.body;
 
   if (!name || !todo) {
     res.status(500).send('Input both fields');
@@ -23,7 +24,7 @@ router.post('/add', jsonParser, async (req: Request, res: Response): Promise<voi
     let user = await User.findOne({ name });
 
     if (!user) {
-      const newUser = new User({
+      let newUser = new User({
         name,
         todos: [{ todo }], 
       });
@@ -31,7 +32,7 @@ router.post('/add', jsonParser, async (req: Request, res: Response): Promise<voi
       res.send(`Todo added successfully for user ${name}.`);
     } else {
       
-      user.todos.push({ todo } as ITodoDocument); 
+      user.todos.push({ todo } as ITodo); 
       await user.save();
       res.send(`Todo added successfully for user ${name}.`);
     }
@@ -41,67 +42,68 @@ router.post('/add', jsonParser, async (req: Request, res: Response): Promise<voi
   }
 });
 
-export default router;
 
-/*
-type TUser = {
-    name: string;
-    todos: string[];
-};
+router.get("/todos/:id", jsonParser, async (req: Request, res: Response): Promise<void> => {
+  let username: string = req.params.id;
 
-let UserList: TUser[] = [];
+  try {
+    let user = await User.findOne({ name: username }).populate('todos').exec();
 
-
-
-
-router.post("/add", jsonParser, function (req: Request, res: Response) {
-
-    let index : number = 0;
-    index = UserList.findIndex(x  => x.name === req.body.name);
-
-    console.log(index);
-    if (index === -1) {
-        UserList.push({ name: req.body.name, todos: [req.body.todo] });
-        res.send(`Todo added successfully for user ${req.body.name}.`);
-    } else {
-        UserList[index].todos.push(req.body.todo
-        )
-        res.send(`Todo added successfully for user ${req.body.name}.`);
+    if (!user) {
+      res.status(500).send("User not found");
+      return;
     }
-    //console.log(UserList)
-    //console.log(UserList[0].todos)
-    //console.log(UserList[0].todos[0])
-    
+    let todos = user.todos.map((x) => x.todo);
+    res.json(todos);
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("An error ocurred");
+  }
 });
 
+router.delete("/delete/:name", async (req: Request, res: Response): Promise<void> => {
+  let username = req.params.name;
 
+  try {
+    let deletedUser = await User.findOneAndDelete({ name: username });
 
-router.get("/todos/:id", jsonParser, function (req: Request, res: Response) {
-
-    let index :number = 0;
-    let username : string = req.params.id;
-    index = UserList.findIndex(x => x.name === username);
-    if (index === -1) {
-        res.status(201).send("User not found");
-    } else {
-      console.log(UserList[index].todos)
-      res.json(UserList[index].todos);
+    if (!deletedUser) {
+      res.status(500).send("User not found");
+      return;
     }
-  });
+    res.send("user deleted");
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("An error ocurred.");
+  }
+});
 
-router.delete("/delete", function (req: Request, res: Response) {
-    console.log("Toimii")
-    let index : number= 0;
-    
-    index = UserList.findIndex(x => x.name === req.body);
-    if (index === -1) {
-      console.log("Hello 2")
-      res.send("User not found")
-    } else {
-    UserList.splice(index, 1)
-      console.log("Hello 1")
-      res.send("User deleted");
+router.put("/update", jsonParser, async (req: Request, res: Response): Promise<void> => {
+  console.log(req.body.name)
+  let { name, todo } = req.body;
+
+
+  try {
+    let user = await User.findOne({ name });
+
+    if (!user) {
+      res.status(500).send("User not found.");
+      return;
     }
-  });
+    let todoIndex = user.todos.findIndex((x) => x.todo === todo);
+    if (todoIndex === -1) {
+      res.status(500).send("Todo not found.");
+      return;
+    }
 
-*/
+    user.todos.splice(todoIndex, 1);
+    await user.save();
+
+    res.send("Todo deleted successfully.");
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("An error ocurred");
+  }
+});
+
+export default router;

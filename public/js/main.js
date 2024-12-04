@@ -25,6 +25,7 @@ document.getElementById('todoForm').addEventListener('submit', function (event) 
 
 
 
+
 document.getElementById('searchForm').addEventListener('submit', function (event) {
     
     event.preventDefault();
@@ -34,81 +35,79 @@ document.getElementById('searchForm').addEventListener('submit', function (event
     let searchQuery = fetchURL.concat(searchUser);
     
     fetch(searchQuery)
-        
-        .then((response) => {
-            if (response.status === 201) {
-                response.text()
-                .then(response => 
-            document.getElementById('server-response').innerText = response)
-                
-            }
-            else{
-            return response.json();
-            }
-        })
-        .then((todos) => {
-            
-            let todoListElement = document.getElementById('todoList');
-            todoListElement.innerHTML = ''; 
-
-            let deleteBox = document.getElementById('box');
-              deleteBox.innerHTML = "";
-            let deleteButton = document.createElement("button");
-              deleteButton.textContent = "Delete user";
-              deleteButton.setAttribute("id", "deleteUser")
-              deleteBox.appendChild(deleteButton);
-
-              deleteButton.addEventListener('click', () => {
-                fetch(`${window.location.origin}/delete/${searchUser}`, { method: 'DELETE' })
-                    .then((response) => response.text())
-                    .then((message) => {
-                        document.getElementById('server-response').innerText = message;
-                    })
-                    .catch((error) => console.error('Error deleting user:', error));
-            });
-
-
-            todos.forEach((todo) => {
-                let listItem = document.createElement('li');
-                listItem.textContent = `${todo}`;
-                todoListElement.appendChild(listItem);
-            });
+    .then((response) => {
+        if (response.status === 404) {
+          response.text().then((message) => {
+            document.getElementById('server-response').innerText = message;
+          });
+        } else {
+          return response.json();
         }
+      })
+      .then((todos) => {
+        if (todos) {
+          const todoListElement = document.getElementById('todoList');
+          todoListElement.innerHTML = '';
+  
+          const deleteBox = document.getElementById('box');
+          deleteBox.innerHTML = '';
+  
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Delete user';
+          deleteButton.id = 'deleteUser';
+          deleteBox.appendChild(deleteButton);
+  
+          deleteButton.addEventListener('click', () => {
+            fetch(`http://localhost:3000/delete/${searchUser}`, { method: 'DELETE' })
+              .then((response) => response.text())
+              .then((message) => {
+                document.getElementById('server-response').innerText = message;
+                todoListElement.innerHTML = '';
+                deleteBox.innerHTML = '';
+              })
+              .catch((error) => console.error('Error', error));
+          });
+  
+          todos.forEach((todo, index) => {
         
-        )
-        .catch((error) => {
-            console.error('Error:', error);
-            
-        });
-    
+            let listNode = document.createElement('li');
+            let todoLink = document.createElement('a');
+            todoLink.href = '#';
+            todoLink.textContent = todo;
+            todoLink.className = 'delete-task';
+            todoLink.dataset.todoIndex = index;
+            todoLink.dataset.todo = todo;
+  
+            todoLink.addEventListener('click', (e) => {
+              e.preventDefault();
+              console.log(searchUser, todo)
+              deleteTodo(searchUser, todo);
+            });
+  
+            listNode.appendChild(todoLink);
+            todoListElement.appendChild(listNode);
+          });
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+    });
 });
 
-function deleteUserButton(name) {
-    document.getElementById('delete-user').onclick = function() {
-        
-        let fetchURL = 'http://localhost:3000/user/';
-        let searchQuery = fetchURL.concat(name);
-    
-        fetch(searchQuery, {
-            method: 'DELETE',
-            })
-            .then(response => response.text())
-            .then(response => {
-                if (response === "User deleted") {
-                    console.log(response);
-                    console.log(response);
-                    document.getElementById('user-name').innerText = "";
-                    document.getElementById('task-list').innerHTML = "";
-                    document.getElementById('server-response').innerText = response
-                    document.getElementById('delete-user').innerHTML = "";
 
-                } 
-                document.getElementById('server-response').innerText = response
-                
-                
-                });
-    
-    }
+
+function deleteTodo(name, todo) {
+  fetch('http://localhost:3000/update', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, todo }),
+  })
+    .then((response) => response.text())
+    .then((message) => {
+      document.getElementById('server-response').innerText = message;
+    })
+    .catch((error) => console.error("Error", error));
 }
-
 

@@ -1,26 +1,26 @@
-import mongoose, { Document, Schema, Types } from 'mongoose'
+import mongoose, { Document, Schema, Types} from 'mongoose';
 
-interface ITodo {
-    todo: string
+interface ITodo extends Document { 
+    todo: string;
 }
 
-interface ITodoDocument extends ITodo, Document {}
 
 interface IUser extends Document {
-    name: string
-    todos: Types.DocumentArray<ITodoDocument>;
+    name: string;
+    todos: Types.DocumentArray<ITodo>;
 }
 
 let todoSchema: Schema = new Schema({
-    todo: {type: String, required: true},
-})
+    todo: { type: String, required: true },
+});
 
 let userSchema: Schema = new Schema({
-    name: {type: String, required: true},
+    name: { type: String, required: true },
     todos: [todoSchema],
-})
+});
 
-const User: mongoose.Model<IUser> = mongoose.model<IUser>("User", userSchema)
-const Todo: mongoose.Model<ITodoDocument> = mongoose.model<ITodoDocument>('Todo', todoSchema);
+const User: mongoose.Model<IUser> = mongoose.model<IUser>('User', userSchema);
+const Todo: mongoose.Model<ITodo> = mongoose.model<ITodo>('Todo', todoSchema);
 
-export { User, IUser, Todo, ITodo, ITodoDocument };
+
+export { User, IUser, Todo, ITodo };
